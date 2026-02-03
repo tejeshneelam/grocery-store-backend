@@ -11,9 +11,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI || "mongodb+srv://nnntejesh_db_user:b7putMQaUEBKV7pU@cluster-groecery.icnthc3.mongodb.net/")
+mongoose.connect(process.env.MONGODB_URI || "mongodb+srv://nnntejesh_db_user:b7putMQaUEBKV7pU@cluster-groecery.icnthc3.mongodb.net/grocery-shop")
   .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log(err));
+  .catch(err => console.log("MongoDB connection error:", err));
 
 app.get("/", (req, res) => {
   res.send("Backend running");
