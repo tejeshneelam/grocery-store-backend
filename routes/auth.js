@@ -105,16 +105,19 @@ router.post("/login", async (req, res) => {
 
     /* ===== SEND OTP VIA EMAIL ===== */
     try {
-      await transporter.sendMail({
-        from: "Secure Grocery Shop",
+      console.log("Attempting to send OTP email to:", email);
+      const mailResult = await transporter.sendMail({
+        from: "Secure Grocery Shop <nnntejesh@gmail.com>",
         to: email,
         subject: "Your Login OTP",
         text: `Your OTP is: ${otp}. It is valid for 5 minutes.`
       });
+      console.log("Email sent successfully:", mailResult.messageId);
     } catch (emailErr) {
-      console.error("Email sending failed:", emailErr);
-      // Continue with login even if email fails - for development
-      // In production, you might want to return an error
+      console.error("Email sending failed:", emailErr.message);
+      console.error("Full email error:", emailErr);
+      // For development, return error so user knows email failed
+      return res.status(500).json({ message: "Failed to send OTP email. Please check email configuration." });
     }
 
     res.json({ message: "OTP sent to email" });
