@@ -13,18 +13,23 @@ const ADMIN_EMAILS = [
 ];
 
 /* ================= EMAIL TRANSPORT ================= */
-const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransporter({
   service: "gmail",
   auth: {
-    user: "nnntejesh@gmail.com",       // 🔁 replace
-    pass: "jbpe ronq dopo lnfe"           // 🔁 replace
+    user: process.env.EMAIL_USER || "nnntejesh@gmail.com",       // 🔁 replace
+    pass: process.env.EMAIL_PASS || "jbpe ronq dopo lnfe"           // 🔁 replace
   }
 });
 
 /* ================= REGISTER ================= */
 router.post("/register", async (req, res) => {
   try {
+    console.log("Register attempt:", req.body);
     const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -35,9 +40,10 @@ router.post("/register", async (req, res) => {
     const user = new User({ name, email, password: hash });
     await user.save();
 
+    console.log("User registered successfully:", email);
     res.status(200).json({ message: "Registered successfully" });
   } catch (err) {
-    console.log("Register error:", err);
+    console.error("Register error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -74,7 +80,7 @@ router.post("/login", async (req, res) => {
       // For admin login: bypass OTP and return token immediately (admin email/password enforced)
       const token = jwt.sign(
         { id: adminUser._id, role: "admin", email: adminUser.email },
-        "SECRETKEY",
+        process.env.JWT_SECRET || "SECRETKEY",
         { expiresIn: "2h" }
       );
 
@@ -98,12 +104,18 @@ router.post("/login", async (req, res) => {
     });
 
     /* ===== SEND OTP VIA EMAIL ===== */
-    await transporter.sendMail({
-      from: "Secure Grocery Shop",
-      to: email,
-      subject: "Your Login OTP",
-      text: `Your OTP is: ${otp}. It is valid for 5 minutes.`
-    });
+    try {
+      await transporter.sendMail({
+        from: "Secure Grocery Shop",
+        to: email,
+        subject: "Your Login OTP",
+        text: `Your OTP is: ${otp}. It is valid for 5 minutes.`
+      });
+    } catch (emailErr) {
+      console.error("Email sending failed:", emailErr);
+      // Continue with login even if email fails - for development
+      // In production, you might want to return an error
+    }
 
     res.json({ message: "OTP sent to email" });
   } catch (err) {
@@ -140,7 +152,7 @@ router.post("/verify-otp", async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, role: user.role, email: user.email },
-      "SECRETKEY",
+      process.env.JWT_SECRET || "SECRETKEY",
       { expiresIn: "2h" }
     );
 
