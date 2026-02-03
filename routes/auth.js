@@ -16,9 +16,14 @@ const ADMIN_EMAILS = [
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER || "nnntejesh@gmail.com",       // 🔁 replace
-    pass: process.env.EMAIL_PASS || "jbpe ronq dopo lnfe"           // 🔁 replace
-  }
+    user: process.env.EMAIL_USER || "nnntejesh@gmail.com",
+    pass: process.env.EMAIL_PASS || "jbpe ronq dopo lnfe"
+  },
+  // Add timeout and other options
+  timeout: 10000, // 10 seconds timeout
+  pool: true, // use pooled connections
+  maxConnections: 1,
+  maxMessages: 1
 });
 
 /* ================= REGISTER ================= */
@@ -106,6 +111,8 @@ router.post("/login", async (req, res) => {
     /* ===== SEND OTP VIA EMAIL ===== */
     try {
       console.log("Attempting to send OTP email to:", email);
+      console.log("OTP:", otp); // For testing - remove in production
+
       const mailResult = await transporter.sendMail({
         from: "Secure Grocery Shop <nnntejesh@gmail.com>",
         to: email,
@@ -116,8 +123,13 @@ router.post("/login", async (req, res) => {
     } catch (emailErr) {
       console.error("Email sending failed:", emailErr.message);
       console.error("Full email error:", emailErr);
-      // For development, return error so user knows email failed
-      return res.status(500).json({ message: "Failed to send OTP email. Please check email configuration." });
+
+      // For development: show OTP in response so user can test
+      console.log("DEVELOPMENT MODE: OTP for", email, "is:", otp);
+      return res.json({
+        message: "Email failed, but here's your OTP for testing: " + otp,
+        otp: otp // Remove this in production!
+      });
     }
 
     res.json({ message: "OTP sent to email" });
